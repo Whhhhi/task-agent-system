@@ -1,0 +1,36 @@
+# FastAPI & Web
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.2
+pydantic-settings==2.1.0
+
+# Database
+sqlalchemy==2.0.23
+pymysql==1.1.0
+cryptography==41.0.7
+alembic==1.13.0
+
+# Redis
+redis==5.0.1
+
+# Auth & Security
+pyjwt==2.8.0
+bcrypt==4.1.2
+python-multipart==0.0.6
+
+# HTTP Client (for LLM API calls)
+httpx==0.25.2
+
+# Scheduler
+apscheduler==3.10.4
+
+# CORS Middleware (built-in with starlette/fastapi)
+
+# Logging
+loguru==0.7.2
+
+# Timezone
+pytz==2023.3
+
+# Data processing
+pydantic-extra-types==2.1.0

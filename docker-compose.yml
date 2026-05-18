@@ -1,0 +1,91 @@
+# ============================================================
+# 智能任务拆解Agent系统 - Docker Compose 配置
+# ============================================================
+# 使用方式：
+#   1. 修改 .env 文件中的配置（数据库密码、API Key等）
+#   2. docker-compose up -d
+#   3. 访问 http://localhost:8000/docs 查看 API 文档
+# ============================================================
+
+version: "3.8"
+
+services:
+  # ─── MySQL 数据库 ───
+  mysql:
+    image: mysql:8.0
+    container_name: task-agent-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-root123456}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-task_agent_db}
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - task-agent-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis 缓存 ───
+  redis:
+    image: redis:7-alpine
+    container_name: task-agent-redis
+    restart: always
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - task-agent-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── 后端 API 服务 ───
+  api:
+    build: .
+    container_name: task-agent-api
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-root123456}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-task_agent_db}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_DB=0
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_BASE_URL=${LLM_BASE_URL:-https://api.deepseek.com/v1}
+      - LLM_MODEL_NAME=${LLM_MODEL_NAME:-deepseek-chat}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-super-secret-jwt-key}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./logs:/app/logs
+      - .env:/app/.env
+    networks:
+      - task-agent-network
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  task-agent-network:
+    driver: bridge
